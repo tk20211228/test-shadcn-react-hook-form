@@ -69,43 +69,52 @@ export const wifiSsidColumns: ColumnDef<NetworkConfiguration>[] = [
   },
 ];
 
+/**
+ * 適切なコンポーネント名に変えてください
+ */
+function SwitchCell({ GUID }: { GUID: string }) {
+  const form = useFormContext<PolicyForm>();
+  const currentActiveSSID = form.watch("activeSSID");
+  const isEnabled = currentActiveSSID?.includes(GUID);
+
+  return (
+    <div className="flex items-center gap-4">
+      <Switch
+        checked={isEnabled}
+        onCheckedChange={(checked) => {
+          return currentActiveSSID
+            ? checked
+              ? form.setValue("activeSSID", [...currentActiveSSID, GUID])
+              : form.setValue(
+                  "activeSSID",
+                  currentActiveSSID.filter((g) => g !== GUID)
+                )
+            : form.setValue("activeSSID", [GUID]);
+        }}
+      />
+    </div>
+  );
+}
+
 type SsidsTableProps = {
   data: NetworkConfiguration[];
 };
 
 export default function SsidsTable({ data }: SsidsTableProps) {
-  const form = useFormContext<PolicyForm>();
-  const currentActiveSSID = form.watch("activeSSID");
-
-  const columns: ColumnDef<NetworkConfiguration>[] = [
-    ...wifiSsidColumns,
-    {
-      id: "setSwitch",
-      header: "設定",
-      cell: ({ row }) => {
-        const networkConfiguration = row.original;
-        const GUID = networkConfiguration.GUID;
-        const isEnabled = currentActiveSSID?.includes(GUID);
-        return (
-          <div className="flex items-center gap-4">
-            <Switch
-              checked={isEnabled}
-              onCheckedChange={(checked) => {
-                return currentActiveSSID
-                  ? checked
-                    ? form.setValue("activeSSID", [...currentActiveSSID, GUID])
-                    : form.setValue(
-                        "activeSSID",
-                        currentActiveSSID.filter((g) => g !== GUID)
-                      )
-                  : form.setValue("activeSSID", [GUID]);
-              }}
-            />
-          </div>
-        );
+  const columns: ColumnDef<NetworkConfiguration>[] = React.useMemo(() => {
+    return [
+      ...wifiSsidColumns,
+      {
+        id: "setSwitch",
+        header: "設定",
+        cell: ({ row }) => {
+          const networkConfiguration = row.original;
+          const GUID = networkConfiguration.GUID;
+          return <SwitchCell GUID={GUID} />;
+        },
       },
-    },
-  ];
+    ];
+  }, []);
 
   const table = useReactTable({
     data,
